@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mapbox Marker 연결하기</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css" rel="stylesheet" />
+</head>
+<body>
+
+<div id="map" style="width: 800px; height: 600px;"></div>
+
+<script src="https://api.mapbox.com/mapbox.js/plugins/turf/v3.0.11/turf.min.js"></script>
+
+<script>
+  mapboxgl.accessToken = 'pk.eyJ1IjoiZWFsaXllbCIsImEiOiJjbGltbzB3OWMwZXc4M2huMmJ0Mjh5YWhoIn0.RFw0eMy-KmWZPxi0ivqVzQ';
+  
+  var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v11',
+    center: [127.05547800197033, 37.033850009891204], // 지도의 중심 좌표 설정
+    zoom: 10 // 지도의 줌 레벨 설정
+  });
+  
+  // 마커 생성
+  var markers = [
+    { id: 'marker1', lngLat: [127.0354, 37.0255] }, // 마커 1 좌표
+    { id: 'marker2', lngLat: [127.0413, 37.0246] }  // 마커 2 좌표
+  ];
+  
+  // 마커를 지도에 추가
+  markers.forEach(function(marker) {
+    var el = document.createElement('div');
+    el.className = 'marker';
+    
+    new mapboxgl.Marker(el)
+      .setLngLat(marker.lngLat)
+      .addTo(map);
+  });
+  
+  // 마커 간의 선 그리기
+  var coordinates = markers.map(function(marker) {
+    return marker.lngLat;
+  });
+  
+  var lineString = turf.lineString(coordinates);
+  
+  map.on('load', function() {
+    map.addSource('line', {
+      type: 'geojson',
+      data: lineString
+    });
+    
+    map.addLayer({
+      id: 'line',
+      type: 'line',
+      source: 'line',
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#888',
+        'line-width': 4
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

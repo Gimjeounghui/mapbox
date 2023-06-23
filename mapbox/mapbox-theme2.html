@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>3D Digital Twin</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <!-- mapbox marker 선을 그리기 위한 라이브러리-->
+    <script src="https://api.mapbox.com/mapbox.js/plugins/turf/v3.0.11/turf.min.js"></script>
+    <style>
+      
+        body { 
+            margin: 0; 
+            padding: 0; 
+        }
+
+        #map { 
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            width: 100%; 
+        }
+    
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiZWFsaXllbCIsImEiOiJjbGl4c3lxamwwNWkzM2lxcXo2ZGMzeDB3In0.wk20DAA58iBB-7B1hd8wZA';
+        
+        const map = new mapboxgl.Map ({
+            
+            style: 'mapbox://styles/mapbox/light-v11',          // 지도 style 지정(변경가능)
+            center: [127.05547800197033, 37.033850009891204],   // 지도의 초기 중심 좌표설정
+            zoom: 15.5,                                         // 지도의 초기 확대/축소
+            pitch: 45,                                          // 수평선에서 지도를 보는 각도
+            bearing: -17.6,                                     // 지도의 초기 방향 또는 회전설정. BEARING값은 지도가 회전하는 방향을 지정하며 진북에서 시계방향으로도 단위측정
+            container: 'map',                                   // 지도가 RENDERING될 ID가 MAP인 HTML 요소 지정
+            antialias: true                                     // MAP을 더 부드럽게 REDERING하기 위해 antialias 활성화. antialiasSMS 들쭉날쭉한 가장자리를 줄이고 시각적 품질향상
+        });
+
+        // 지도에 표현할 위치 값(위도, 경도)
+        const locations = [
+
+            {
+                'name': '삼성전자 평택사업장',
+                'color': '#e3af54',
+                lngLat: [127.0557, 37.0382]        
+            },
+
+            {
+                'name': '삼성전자 반도체공장',
+                'color': '#329649',
+                lngLat: [127.0616, 37.0385]         
+            },
+
+            {
+                'name': '삼성전자 고덕 현장 2GATE',
+                'color': '#329649',
+                lngLat: [127.056, 37.0289]         
+            },
+
+            {
+                'name': '삼성전자 고덕 현장 5GATE',
+                'color': '#f2f74d',
+                lngLat: [127.0649, 37.0304]        
+            },
+
+            {
+                'name': '평택고덕IC',
+                'color': '#182ed6',
+                lngLat: [127.0354, 37.0255]         
+            },
+
+            {
+
+                'name': '평택제천고속도로',
+                'color': '#f0379d',
+                lngLat: [127.0413, 37.0246]         
+            }
+
+        ]
+
+        locations.forEach(({ name, color, lngLat }) => {
+
+            const popup = new mapboxgl.Popup({ offset: 25 }).setText(name);
+
+        // Marker 설정
+        new mapboxgl.Marker({
+
+            color,
+            scale: 0.5 // marker 크기조절
+        })
+        
+
+            .setLngLat(lngLat)
+            .setPopup(popup)
+            .addTo(map);
+        })
+
+        // 맵 크기가 변경될 때마다 마커 크기를 업데이트하는 함수
+        function updateMarkerSize() {
+
+        // querySelector('.mapboxgl-map') : Map 컨테이너의 css 선택자 지정. 해당 컨테이너의 너비와 높이를 가져옴
+        var mapContainer = document.querySelector('.mapboxgl-map');
+        var mapWidth = mapContainer.offsetWidth;
+        var mapHeight = mapContainer.offsetHeight;
+
+        // 전체 화면에 비례하여 마커 크기 조정
+        // markerSize : 전체화면에 비례한 마커 크기 계산 후 markerSize 변수에 할당
+        var markerSize = Math.min(mapWidth, mapHeight) * 0.1; // 10% 비율로 조정
+
+        // 마커의 css 크기(너비와 높이) 업데이트
+        marker.getElement().style.width = markerSize + 'px';
+        marker.getElement().style.height = markerSize + 'px';
+        
+    }
+        map.on('style.load', () => {
+            // Insert the layer beneath any symbol layer.
+            const layers = map.getStyle().layers;
+            const labelLayerId = layers.find(
+                (layer) => layer.type === 'symbol' && layer.layout['text-field']
+            ).id;
+
+            // The 'building' layer in the Mapbox Streets
+            // vector tileset contains building height data
+            // from OpenStreetMap.
+            map.addLayer(
+                {
+                    'id': 'add-3d-buildings',
+                    'source': 'composite',
+                    'source-layer': 'building',
+                    'filter': ['==', 'extrude', 'true'],
+                    'type': 'fill-extrusion',
+                    'minzoom': 15,
+                    'paint': {
+                        'fill-extrusion-color': '#aaa',
+
+                        // Use an 'interpolate' expression to
+                        // add a smooth transition effect to
+                        // the buildings as the user zooms in.
+                        'fill-extrusion-height': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            15,
+                            0,
+                            15.05,
+                            ['get', 'height']
+                        ],
+                        'fill-extrusion-base': [
+                            'interpolate',
+                            ['linear'],
+                            ['zoom'],
+                            15,
+                            0,
+
+                            15.05,
+                            ['get', 'min_height']
+                        ],
+                        'fill-extrusion-opacity': 0.6
+                    }
+                },
+                labelLayerId
+            );
+        });
+    </script>
+</body>
+</html>
